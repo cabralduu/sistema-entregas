@@ -1,0 +1,30 @@
+name: CI — Testes Automáticos
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  testar:
+    name: Rodar testes
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Baixar código
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: 📦 Instalar dependências
+        run: npm install
+
+      - name: 🧪 Rodar testes
+        run: npm test
+        env:
+          NODE_ENV: test

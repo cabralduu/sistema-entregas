@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin — Sistema de Entregas</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; margin: 0; background: #f4f4f4; }
+
+    header {
+      background: #1e88e5;
+      color: white;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    header h1 { margin: 0; font-size: 18px; }
+    .logout-btn { background: #c62828; color: white; border: none; padding: 7px 14px; border-radius: 5px; cursor: pointer; }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      padding: 15px;
+    }
+    @media (max-width: 600px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+
+    .stat-card {
+      background: white;
+      border-radius: 8px;
+      padding: 15px;
+      text-align: center;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .stat-card .num { font-size: 28px; font-weight: bold; }
+    .stat-card .label { font-size: 12px; color: #666; margin-top: 4px; }
+    .stat-total .num { color: #1e88e5; }
+    .stat-pendente .num { color: #f57c00; }
+    .stat-coletada .num { color: #7b1fa2; }
+    .stat-finalizada .num { color: #2e7d32; }
+
+    .container {
+      background: white;
+      border-radius: 8px;
+      padding: 15px;
+      margin: 0 15px 15px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .container h3 { margin-top: 0; }
+
+    .form-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .form-row input { flex: 1; min-width: 120px; padding: 8px; border: 1px solid #ccc; border-radius: 5px; }
+
+    button { padding: 8px 14px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; }
+    .btn-criar { background: #2e7d32; color: white; }
+    .btn-excluir { background: #c62828; color: white; font-size: 12px; padding: 5px 10px; }
+
+    select { padding: 8px; border: 1px solid #ccc; border-radius: 5px; }
+
+    .card {
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 10px;
+      background: #fafafa;
+    }
+    .card p { margin: 3px 0; font-size: 14px; }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: bold;
+    }
+    .badge-pendente { background: #fff3e0; color: #e65100; }
+    .badge-coletada { background: #ede7f6; color: #6a1b9a; }
+    .badge-finalizada { background: #e8f5e9; color: #1b5e20; }
+
+    .paginacao { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
+    .paginacao button { background: #1e88e5; color: white; }
+    .paginacao button:disabled { background: #ccc; cursor: not-allowed; }
+
+    #cep:focus { border-color: #1e88e5; outline: none; }
+    #motoristaNome, #motoristaSenha { padding: 8px; border: 1px solid #ccc; border-radius: 5px; margin-right: 5px; }
+    .btn-cadastrar { background: #1565c0; color: white; }
+    .btn-excluir-moto { background: #c62828; color: white; font-size: 12px; padding: 4px 10px; margin-left: 8px; border-radius: 4px; border: none; cursor: pointer; }
+    .moto-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-bottom: 1px solid #eee; font-size: 14px; }
+    .moto-item:last-child { border-bottom: none; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🚚 Painel Admin</h1>
+  <button class="logout-btn" onclick="logout()">Sair</button>
+</header>
+
+<!-- Stats -->
+<div class="stats-grid">
+  <div class="stat-card stat-total"><div class="num" id="statTotal">—</div><div class="label">Total</div></div>
+  <div class="stat-card stat-pendente"><div class="num" id="statPendentes">—</div><div class="label">Pendentes</div></div>
+  <div class="stat-card stat-coletada"><div class="num" id="statColetadas">—</div><div class="label">Em rota</div></div>
+  <div class="stat-card stat-finalizada"><div class="num" id="statFinalizadas">—</div><div class="label">Finalizadas</div></div>
+</div>
+
+<!-- Criar entrega -->
+<div class="container">
+  <h3>Nova Entrega</h3>
+  <div class="form-row" style="margin-bottom:8px;">
+    <input type="text" id="cliente" placeholder="Nome do cliente" style="flex:2; min-width:150px;">
+    <div style="display:flex; gap:6px; flex:1; min-width:150px;">
+      <input type="text" id="cep" placeholder="CEP (ex: 15000-000)" maxlength="9" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:5px;" oninput="formatarCep(this)" onblur="buscarCep()">
+      <span id="cepStatus" style="font-size:18px; line-height:36px;"></span>
+    </div>
+  </div>
+  <div class="form-row" style="margin-bottom:8px;">
+    <input type="text" id="logradouro" placeholder="Rua / Av." style="flex:3; min-width:150px;">
+    <input type="text" id="numero" placeholder="Nº" style="flex:0.5; min-width:60px;">
+    <input type="text" id="complemento" placeholder="Complemento" style="flex:1; min-width:80px;">
+  </div>
+  <div class="form-row" style="margin-bottom:8px;">
+    <input type="text" id="bairro" placeholder="Bairro" style="flex:1; min-width:100px;">
+    <input type="text" id="cidade" placeholder="Cidade" style="flex:1; min-width:100px;">
+    <input type="text" id="estado" placeholder="UF" maxlength="2" style="flex:0.3; min-width:50px;">
+    <button class="btn-criar" onclick="criarEntrega()">Criar</button>
+  </div>
+  <div id="enderecoPreview" style="font-size:12px; color:#1565c0; margin-top:4px; display:none;"></div>
+</div>
+
+<!-- Lista -->
+<div class="container">
+  <h3>Entregas</h3>
+  <div style="display:flex; gap:8px; align-items:center; margin-bottom:12px; flex-wrap:wrap;">
+    <select id="filtro" onchange="pagina=1; carregarEntregas()">
+      <option value="todas">Todas</option>
+      <option value="pendente">Pendentes</option>
+      <option value="coletada">Em rota</option>
+      <option value="finalizada">Finalizadas</option>
+    </select>
+    <span id="totalInfo" style="font-size:13px; color:#666;"></span>
+  </div>
+  <div id="lista">Carregando...</div>
+  <div class="paginacao">
+    <button id="btnAnterior" onclick="pagina--; carregarEntregas()" disabled>← Anterior</button>
+    <span id="paginaInfo"></span>
+    <button id="btnProxima" onclick="pagina++; carregarEntregas()" disabled>Próxima →</button>
+  </div>
+</div>
+
+<!-- Motoristas -->
+<div class="container">
+  <h3>Motoristas</h3>
+  <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:15px;">
+    <input type="text" id="motoristaNome" placeholder="Nome" style="padding:8px; border:1px solid #ccc; border-radius:5px; flex:1; min-width:100px;">
+    <input type="password" id="motoristaSenha" placeholder="Senha" style="padding:8px; border:1px solid #ccc; border-radius:5px; flex:1; min-width:100px;">
+    <button class="btn-cadastrar" onclick="cadastrarMotorista()">Cadastrar</button>
+  </div>
+  <div id="listaMotoristas">Carregando...</div>
+</div>
+
+<script>
+  // Verifica auth
+  if (!localStorage.getItem("admin")) {
+    alert("Faça login primeiro!");
+    window.location.href = "login.html";
+  }
+
+  let pagina = 1;
+  const limite = 15;
+
+  function logout() {
+    localStorage.removeItem("admin");
+    window.location.href = "login.html";
+  }
+
+  async function carregarStats() {
+    try {
+      const res = await fetch("/stats");
+      const s = await res.json();
+      document.getElementById("statTotal").textContent = s.total || 0;
+      document.getElementById("statPendentes").textContent = s.pendentes || 0;
+      document.getElementById("statColetadas").textContent = s.coletadas || 0;
+      document.getElementById("statFinalizadas").textContent = s.finalizadas || 0;
+    } catch(e) {}
+  }
+
+  async function carregarEntregas() {
+    const filtro = document.getElementById("filtro").value;
+    const lista = document.getElementById("lista");
+    lista.innerHTML = "Carregando...";
+
+    try {
+      const params = new URLSearchParams({
+        motorista: "admin",
+        pagina,
+        limite,
+        ...(filtro !== "todas" ? { status: filtro } : {})
+      });
+      const res = await fetch(`/entregas?${params}`);
+      if (!res.ok) throw new Error("Erro ao carregar");
+      const { data, pagina: pg } = await res.json();
+
+      document.getElementById("paginaInfo").textContent = `Página ${pg}`;
+      document.getElementById("btnAnterior").disabled = pg <= 1;
+      document.getElementById("btnProxima").disabled = data.length < limite;
+      document.getElementById("totalInfo").textContent = `${data.length} resultado(s)`;
+
+      if (data.length === 0) {
+        lista.innerHTML = "<p>Nenhuma entrega encontrada.</p>";
+        return;
+      }
+
+      lista.innerHTML = data.map(e => `
+        <div class="card">
+          <p><strong>#${e.id}</strong> · <span class="badge badge-${e.status}">${e.status}</span></p>
+          <p><strong>Cliente:</strong> ${escapeHtml(e.cliente)}</p>
+          <p><strong>Endereço:</strong> ${escapeHtml(e.endereco)}</p>
+          <p><strong>Motorista:</strong> ${e.motorista ? escapeHtml(e.motorista) : "—"}</p>
+          <p style="font-size:11px; color:#999;">Criado: ${e.criado_em || ""}</p>
+          <button class="btn-excluir" onclick="excluir(${e.id})">Excluir</button>
+        </div>
+      `).join("");
+
+    } catch(err) {
+      lista.innerHTML = `<p style="color:red;">${err.message}</p>`;
+    }
+  }
+
+  function formatarCep(input) {
+    let v = input.value.replace(/\D/g, '');
+    if (v.length > 5) v = v.slice(0,5) + '-' + v.slice(5,8);
+    input.value = v;
+  }
+
+  async function buscarCep() {
+    const cep = document.getElementById("cep").value.replace(/\D/g, '');
+    const status = document.getElementById("cepStatus");
+    if (cep.length !== 8) { status.textContent = ''; return; }
+
+    status.textContent = '⏳';
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      const data = await res.json();
+      if (data.erro) { status.textContent = '❌'; return; }
+
+      document.getElementById("logradouro").value = data.logradouro || '';
+      document.getElementById("bairro").value = data.bairro || '';
+      document.getElementById("cidade").value = data.localidade || '';
+      document.getElementById("estado").value = data.uf || '';
+      document.getElementById("numero").focus();
+      status.textContent = '✅';
+      atualizarPreview();
+    } catch(e) {
+      status.textContent = '❌';
+    }
+  }
+
+  function atualizarPreview() {
+    const log = document.getElementById("logradouro").value;
+    const num = document.getElementById("numero").value;
+    const bairro = document.getElementById("bairro").value;
+    const cidade = document.getElementById("cidade").value;
+    const uf = document.getElementById("estado").value;
+    if (!log) return;
+    const preview = document.getElementById("enderecoPreview");
+    const end = [log, num, bairro, cidade, uf].filter(Boolean).join(', ');
+    preview.textContent = '📍 ' + end;
+    preview.style.display = 'block';
+  }
+
+  function montarEndereco() {
+    const log = document.getElementById("logradouro").value.trim();
+    const num = document.getElementById("numero").value.trim();
+    const comp = document.getElementById("complemento").value.trim();
+    const bairro = document.getElementById("bairro").value.trim();
+    const cidade = document.getElementById("cidade").value.trim();
+    const uf = document.getElementById("estado").value.trim();
+    return [log, num, comp, bairro, cidade, uf].filter(Boolean).join(', ');
+  }
+
+  async function criarEntrega() {
+    const cliente = document.getElementById("cliente").value.trim();
+    const endereco = montarEndereco();
+    if (!cliente) { alert("Preencha o nome do cliente!"); return; }
+    if (!endereco) { alert("Preencha o endereço!"); return; }
+
+    try {
+      const res = await fetch("/entregas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cliente, endereco })
+      });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.erro); }
+      // Limpar form
+      ["cliente","cep","logradouro","numero","complemento","bairro","cidade","estado"].forEach(id => {
+        document.getElementById(id).value = "";
+      });
+      document.getElementById("cepStatus").textContent = "";
+      document.getElementById("enderecoPreview").style.display = "none";
+      pagina = 1;
+      carregarEntregas();
+      carregarStats();
+    } catch(err) {
+      alert(err.message);
+    }
+  }
+
+  async function excluir(id) {
+    if (!confirm("Excluir esta entrega?")) return;
+    try {
+      const res = await fetch(`/entregas/${id}`, { method: "DELETE" });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.erro); }
+      carregarEntregas();
+      carregarStats();
+    } catch(err) {
+      alert(err.message);
+    }
+  }
+
+  async function cadastrarMotorista() {
+    const nome = document.getElementById("motoristaNome").value.trim();
+    const senha = document.getElementById("motoristaSenha").value.trim();
+    if (!nome || !senha) { alert("Preencha todos os campos!"); return; }
+
+    try {
+      const res = await fetch("/cadastro", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nome, senha })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert("Motorista cadastrado!");
+        document.getElementById("motoristaNome").value = "";
+        document.getElementById("motoristaSenha").value = "";
+      } else {
+        alert(data.erro || "Erro ao cadastrar");
+      }
+    } catch(err) {
+      alert("Erro ao cadastrar motorista");
+    }
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
+  }
+
+  carregarStats();
+  carregarEntregas();
+  carregarMotoristas();
+
+  async function carregarMotoristas() {
+    const div = document.getElementById("listaMotoristas");
+    try {
+      const res = await fetch("/motoristas");
+      const lista = await res.json();
+      if (!lista.length) { div.innerHTML = "<p style='color:#999;font-size:13px;'>Nenhum motorista cadastrado.</p>"; return; }
+      div.innerHTML = lista.map(m => `
+        <div class="moto-item">
+          <span>👤 ${escapeHtml(m.nome)}</span>
+          <button class="btn-excluir-moto" onclick="excluirMotorista(${m.id}, '${escapeHtml(m.nome)}')">Excluir</button>
+        </div>
+      `).join("");
+    } catch(e) { div.innerHTML = "<p style='color:red;'>Erro ao carregar</p>"; }
+  }
+
+  async function excluirMotorista(id, nome) {
+    if (!confirm(`Excluir o motorista "${nome}"?
+
+Isso não afeta as entregas já atribuídas a ele.`)) return;
+    try {
+      const res = await fetch(`/motoristas/${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (res.ok) { carregarMotoristas(); }
+      else { alert(data.erro || "Erro ao excluir"); }
+    } catch(e) { alert("Erro ao excluir motorista"); }
+  }
+</script>
+</body>
+</html>

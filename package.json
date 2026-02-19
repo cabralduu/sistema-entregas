@@ -1,0 +1,25 @@
+{
+  "name": "sistema-entregas",
+  "version": "1.0.0",
+  "description": "Sistema de gerenciamento de entregas para transportadora",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "jest --forceExit --runInBand"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^7.0.0"
+  },
+  "jest": {
+    "testEnvironment": "node"
+  }
+}

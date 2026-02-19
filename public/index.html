@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Área do Motorista</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; margin: 0; background: #f4f4f4; }
+
+    header {
+      background: #f57c00;
+      color: white;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    header h1 { margin: 0; font-size: 18px; }
+    .logout-btn { background: #c62828; color: white; border: none; padding: 7px 14px; border-radius: 5px; cursor: pointer; }
+
+    .info-bar {
+      background: white;
+      padding: 10px 15px;
+      border-bottom: 1px solid #ddd;
+      font-size: 14px;
+      color: #555;
+    }
+
+    .container {
+      padding: 15px;
+    }
+
+    .entrega {
+      background: white;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .entrega p { margin: 4px 0; font-size: 14px; }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: bold;
+    }
+    .badge-pendente { background: #fff3e0; color: #e65100; }
+    .badge-coletada { background: #ede7f6; color: #6a1b9a; }
+    .badge-finalizada { background: #e8f5e9; color: #1b5e20; }
+
+    .btn-row { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
+    button { padding: 8px 14px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; }
+    .btn-coletar { background: #f57c00; color: white; }
+    .btn-finalizar { background: #2e7d32; color: white; }
+    .btn-rota { background: #1565c0; color: white; }
+
+    #loading { text-align: center; padding: 20px; color: #999; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🚚 Entregas</h1>
+  <button class="logout-btn" onclick="logout()">Sair</button>
+</header>
+<div class="info-bar">Logado como: <strong id="nomeMotorista"></strong></div>
+
+<div class="container">
+  <div id="lista"><div id="loading">Carregando entregas...</div></div>
+</div>
+
+<script>
+  const motorista = localStorage.getItem("motorista");
+  if (!motorista) {
+    alert("Faça login primeiro!");
+    window.location.href = "login.html";
+  }
+  document.getElementById("nomeMotorista").textContent = motorista;
+
+  function logout() {
+    localStorage.removeItem("motorista");
+    window.location.href = "login.html";
+  }
+
+  async function carregarEntregas() {
+    try {
+      const res = await fetch(`/entregas?motorista=${encodeURIComponent(motorista)}&limite=50`);
+      if (!res.ok) throw new Error("Erro ao carregar");
+      const { data } = await res.json();
+      renderEntregas(data);
+    } catch(err) {
+      document.getElementById("lista").innerHTML = `<p style="color:red;">Erro: ${err.message}</p>`;
+    }
+  }
+
+  function renderEntregas(entregas) {
+    const lista = document.getElementById("lista");
+    if (entregas.length === 0) {
+      lista.innerHTML = "<p style='text-align:center; color:#999; padding:20px;'>Nenhuma entrega disponível no momento.</p>";
+      return;
+    }
+
+    lista.innerHTML = entregas.map(e => {
+      const badges = `<span class="badge badge-${e.status}">${e.status}</span>`;
+      let btns = "";
+
+      if (e.status === "pendente") {
+        btns = `<button class="btn-coletar" onclick="coletar(${e.id})">📦 Coletar</button>`;
+      } else if (e.motorista === motorista && e.status === "coletada") {
+        btns = `
+          <button class="btn-finalizar" onclick="finalizar(${e.id})">✅ Finalizar</button>
+          <button class="btn-rota" onclick="verRota('${escapeHtml(e.endereco)}')">🗺 Ver Rota</button>
+        `;
+      }
+
+      return `
+        <div class="entrega">
+          <p>${badges}</p>
+          <p><strong>Cliente:</strong> ${escapeHtml(e.cliente)}</p>
+          <p><strong>Endereço:</strong> ${escapeHtml(e.endereco)}</p>
+          ${e.motorista && e.motorista !== motorista ? `<p style="font-size:12px; color:#999;">Motorista: ${escapeHtml(e.motorista)}</p>` : ""}
+          ${btns ? `<div class="btn-row">${btns}</div>` : ""}
+        </div>
+      `;
+    }).join("");
+  }
+
+  async function coletar(id) {
+    try {
+      const res = await fetch(`/entregas/${id}/coletar`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ motorista })
+      });
+      const data = await res.json();
+      if (!res.ok) { alert(data.erro || "Erro ao coletar"); return; }
+      carregarEntregas();
+    } catch(err) {
+      alert("Erro ao coletar entrega");
+    }
+  }
+
+  async function finalizar(id) {
+    try {
+      const res = await fetch(`/entregas/${id}/finalizar`, { method: "PUT" });
+      if (!res.ok) { const d = await res.json(); alert(d.erro); return; }
+      carregarEntregas();
+    } catch(err) {
+      alert("Erro ao finalizar entrega");
+    }
+  }
+
+  // Sua chave da API OpenRouteService (gratuita em openrouteservice.org)
+  const ORS_KEY = "SUA_CHAVE_ORS_AQUI";
+
+  async function verRota(endereco) {
+    // Se não tiver chave configurada, abre o Maps direto
+    if (ORS_KEY === "SUA_CHAVE_ORS_AQUI") {
+      window.open(`https://www.google.com/maps/search/${encodeURIComponent(endereco)}`, "_blank");
+      return;
+    }
+
+    const btn = event.target;
+    const textoOriginal = btn.textContent;
+    btn.textContent = "⏳ Calculando...";
+    btn.disabled = true;
+
+    try {
+      // 1) Geocodificar o endereço de destino via ORS
+      const geoRes = await fetch(
+        `https://api.openrouteservice.org/geocode/search?api_key=${ORS_KEY}&text=${encodeURIComponent(endereco)}&size=1&lang=pt`,
+      );
+      const geoData = await geoRes.json();
+      if (!geoData.features || !geoData.features.length) throw new Error("Endereço não encontrado");
+
+      const [destLng, destLat] = geoData.features[0].geometry.coordinates;
+
+      // 2) Pegar localização atual do motorista
+      const pos = await new Promise((res, rej) =>
+        navigator.geolocation.getCurrentPosition(res, rej, { timeout: 8000 })
+      );
+      const { latitude: origLat, longitude: origLng } = pos.coords;
+
+      // 3) Calcular rota via ORS Directions
+      const rotaRes = await fetch("https://api.openrouteservice.org/v2/directions/driving-car", {
+        method: "POST",
+        headers: {
+          "Authorization": ORS_KEY,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          coordinates: [[origLng, origLat], [destLng, destLat]]
+        })
+      });
+      const rotaData = await rotaRes.json();
+      if (!rotaData.routes || !rotaData.routes.length) throw new Error("Rota não encontrada");
+
+      const summary = rotaData.routes[0].summary;
+      const distKm = (summary.distance / 1000).toFixed(1);
+      const mins = Math.round(summary.duration / 60);
+      const horas = Math.floor(mins / 60);
+      const minutos = mins % 60;
+      const tempoStr = horas > 0 ? `${horas}h ${minutos}min` : `${minutos} min`;
+
+      const confirmar = confirm(
+        `📍 ${endereco}
+
+` +
+        `🛣 Distância: ${distKm} km
+` +
+        `⏱ Tempo estimado: ${tempoStr}
+
+` +
+        `Abrir rota no Google Maps?`
+      );
+      if (confirmar) {
+        window.open(`https://www.google.com/maps/dir/${origLat},${origLng}/${encodeURIComponent(endereco)}`, "_blank");
+      }
+
+    } catch(err) {
+      // Se der erro de geolocalização ou API, abre Maps direto
+      const msg = err.code === 1
+        ? "Permissão de localização negada. Abrindo Maps sem calcular rota."
+        : `Não foi possível calcular a rota: ${err.message}. Abrindo Maps.`;
+      alert(msg);
+      window.open(`https://www.google.com/maps/search/${encodeURIComponent(endereco)}`, "_blank");
+    } finally {
+      btn.textContent = textoOriginal;
+      btn.disabled = false;
+    }
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.appendChild(document.createTextNode(str || ""));
+    return div.innerHTML;
+  }
+
+  carregarEntregas();
+  // Atualiza a cada 30s automaticamente
+  setInterval(carregarEntregas, 30000);
+</script>
+</body>
+</html>

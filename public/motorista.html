@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Área do Motorista</title>
+  <style>
+    body {
+      font-family: Arial;
+      background: #f4f4f4;
+      padding: 20px;
+    }
+
+    h2 {
+      text-align: center;
+    }
+
+    .entrega {
+      background: white;
+      padding: 15px;
+      margin-bottom: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    button {
+      padding: 8px 12px;
+      margin-top: 5px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .coletar {
+      background: orange;
+      color: white;
+    }
+
+    .finalizar {
+      background: green;
+      color: white;
+    }
+
+    .rota {
+      background: blue;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Entregas Disponíveis</h2>
+
+  <div id="listaEntregas"></div>
+
+  <script>
+    const motorista = localStorage.getItem("motorista");
+
+    if (!motorista) {
+      alert("Você precisa fazer login!");
+      window.location.href = "login.html";
+    }
+
+    function carregarEntregas() {
+      fetch(`/entregas?motorista=${motorista}`)
+        .then(res => res.json())
+        .then(data => {
+          const lista = document.getElementById("listaEntregas");
+          lista.innerHTML = "";
+
+          data.forEach(entrega => {
+            const div = document.createElement("div");
+            div.className = "entrega";
+
+            div.innerHTML = `
+              <strong>Cliente:</strong> ${entrega.cliente} <br>
+              <strong>Endereço:</strong> ${entrega.endereco} <br>
+              <strong>Status:</strong> ${entrega.status} <br>
+            `;
+
+            // Se estiver pendente
+            if (entrega.status === "pendente") {
+              const btnColetar = document.createElement("button");
+              btnColetar.textContent = "Coletar";
+              btnColetar.className = "coletar";
+              btnColetar.onclick = () => coletar(entrega.id);
+              div.appendChild(btnColetar);
+            }
+
+            // Se for dele e estiver coletada
+            if (entrega.motorista === motorista && entrega.status === "coletada") {
+
+              const btnFinalizar = document.createElement("button");
+              btnFinalizar.textContent = "Finalizar";
+              btnFinalizar.className = "finalizar";
+              btnFinalizar.onclick = () => finalizar(entrega.id);
+              div.appendChild(btnFinalizar);
+
+              const btnRota = document.createElement("button");
+              btnRota.textContent = "Ver Rota";
+              btnRota.className = "rota";
+              btnRota.onclick = () => verRota(entrega.endereco);
+              div.appendChild(btnRota);
+            }
+
+            lista.appendChild(div);
+          });
+        });
+    }
+
+    function coletar(id) {
+      fetch(`/entregas/${id}/coletar`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ motorista })
+      })
+      .then(() => carregarEntregas());
+    }
+
+    function finalizar(id) {
+      fetch(`/entregas/${id}/finalizar`, {
+        method: "PUT"
+      })
+      .then(() => carregarEntregas());
+    }
+
+    function verRota(endereco) {
+      const url = `https://www.google.com/maps/search/${encodeURIComponent(endereco)}`;
+      window.open(url, "_blank");
+    }
+
+    carregarEntregas();
+  </script>
+
+</body>
+</html>
