@@ -1,19 +1,19 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Login Sistema de Entregas</title>
+  <title>Login — Sistema de Entregas</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
-      font-family: Arial;
+      font-family: Arial, sans-serif;
       background: #f4f4f4;
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
+      margin: 0;
     }
-
     .login-box {
       background: white;
       padding: 20px 30px;
@@ -22,85 +22,126 @@
       width: 300px;
       text-align: center;
     }
-
+    label {
+      display: block;
+      text-align: left;
+      font-size: 13px;
+      font-weight: bold;
+      margin-top: 12px;
+      margin-bottom: 3px;
+      color: #333;
+    }
     input, button {
       width: 100%;
       padding: 10px;
-      margin: 10px 0;
       border-radius: 5px;
       border: 1px solid #ccc;
+      box-sizing: border-box;
+      font-size: 14px;
     }
-
+    input:focus {
+      outline: 2px solid #1e88e5;
+      border-color: #1e88e5;
+    }
     button {
       cursor: pointer;
       border: none;
       color: white;
       background-color: #1e88e5;
+      margin-top: 16px;
+      font-size: 15px;
+    }
+    button:hover { background-color: #1565c0; }
+    button:focus { outline: 2px solid #0d47a1; outline-offset: 2px; }
+    #mensagemErro {
+      color: #c62828;
+      font-size: 13px;
+      margin-top: 8px;
+      display: none;
     }
   </style>
 </head>
 <body>
 
-<div class="login-box">
-  <h2>Login Sistema de Entregas</h2>
+<main class="login-box" role="main">
+  <h1 style="font-size:20px; margin-bottom:4px;">🚚 Sistema de Entregas</h1>
+  <p style="color:#666; font-size:13px; margin-top:0;">Faça login para continuar</p>
 
-  <input type="text" id="usuario" placeholder="Usuário">
-  <input type="password" id="senha" placeholder="Senha">
+  <form onsubmit="event.preventDefault(); entrar();" aria-label="Formulário de login">
+    <label for="usuario">Usuário</label>
+    <input
+      type="text"
+      id="usuario"
+      name="usuario"
+      placeholder="Digite seu usuário"
+      autocomplete="username"
+      aria-required="true"
+      aria-label="Nome de usuário"
+    >
 
-  <button onclick="entrar()">Entrar</button>
-</div>
+    <label for="senha">Senha</label>
+    <input
+      type="password"
+      id="senha"
+      name="senha"
+      placeholder="Digite sua senha"
+      autocomplete="current-password"
+      aria-required="true"
+      aria-label="Senha"
+    >
+
+    <div id="mensagemErro" role="alert" aria-live="polite"></div>
+
+    <button type="submit" aria-label="Entrar no sistema">Entrar</button>
+  </form>
+</main>
 
 <script>
 async function entrar() {
   const usuario = document.getElementById("usuario").value.trim();
   const senha = document.getElementById("senha").value.trim();
+  const erro = document.getElementById("mensagemErro");
+
+  erro.style.display = "none";
 
   if (!usuario || !senha) {
-    alert("Preencha todos os campos!");
+    erro.textContent = "Preencha todos os campos!";
+    erro.style.display = "block";
     return;
   }
 
   try {
-    let endpoint = "/login-admin";
-    let body = { usuario, senha };
-
-    // Tenta primeiro login de admin
-    let res = await fetch(endpoint, {
+    let res = await fetch("/login-admin", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body)
+      body: JSON.stringify({ usuario, senha })
     });
 
     if (res.ok) {
-      // Login de admin bem-sucedido
       localStorage.setItem("admin", "true");
       window.location.href = "admin.html";
       return;
     }
 
-    // Se não for admin, tenta como motorista
-    endpoint = "/login";
-    body = { nome: usuario, senha };
-
-    res = await fetch(endpoint, {
+    res = await fetch("/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body)
+      body: JSON.stringify({ nome: usuario, senha })
     });
 
     const data = await res.json();
 
     if (res.ok) {
-      // Login motorista bem-sucedido
       localStorage.setItem("motorista", data.nome);
       window.location.href = "index.html";
     } else {
-      alert(data.erro || "Usuário ou senha inválidos");
+      erro.textContent = data.erro || "Usuário ou senha inválidos";
+      erro.style.display = "block";
     }
 
   } catch (err) {
-    console.error(err);
-    alert("Erro ao tentar logar");
+    erro.textContent = "Erro ao conectar com o servidor";
+    erro.style.display = "block";
   }
 }
 </script>

@@ -58,18 +58,19 @@
     .btn-rota { background: #1565c0; color: white; }
 
     #loading { text-align: center; padding: 20px; color: #999; }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
   </style>
 </head>
 <body>
 
 <header>
   <h1>🚚 Entregas</h1>
-  <button class="logout-btn" onclick="logout()">Sair</button>
+  <button class="logout-btn" onclick="logout()" aria-label="Sair do sistema">Sair</button>
 </header>
-<div class="info-bar">Logado como: <strong id="nomeMotorista"></strong></div>
+<div class="info-bar" role="status" aria-label="Usuário logado">Logado como: <strong id="nomeMotorista"></strong></div>
 
-<div class="container">
-  <div id="lista"><div id="loading">Carregando entregas...</div></div>
+<div class="container" role="main">
+  <div id="lista" aria-live="polite" aria-label="Lista de entregas disponíveis"><div id="loading">Carregando entregas...</div></div>
 </div>
 
 <script>

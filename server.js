@@ -8,7 +8,9 @@ app.use(express.static("public"));
 // ============================================================
 // BANCO DE DADOS — com WAL mode e índices para performance
 // ============================================================
-const db = new sqlite3.Database("./database.db");
+// Em modo teste usa banco em memória (não depende de arquivo)
+const dbPath = process.env.NODE_ENV === "test" ? ":memory:" : "./database.db";
+const db = new sqlite3.Database(dbPath);
 
 db.run("PRAGMA journal_mode=WAL");
 db.run("PRAGMA cache_size=10000");

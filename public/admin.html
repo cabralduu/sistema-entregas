@@ -88,35 +88,36 @@
     .btn-excluir-moto { background: #c62828; color: white; font-size: 12px; padding: 4px 10px; margin-left: 8px; border-radius: 4px; border: none; cursor: pointer; }
     .moto-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-bottom: 1px solid #eee; font-size: 14px; }
     .moto-item:last-child { border-bottom: none; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
   </style>
 </head>
 <body>
 
-<header>
+<header role="banner">
   <h1>🚚 Painel Admin</h1>
-  <button class="logout-btn" onclick="logout()">Sair</button>
+  <button class="logout-btn" onclick="logout()" aria-label="Sair do sistema">Sair</button>
 </header>
 
 <!-- Stats -->
-<div class="stats-grid">
-  <div class="stat-card stat-total"><div class="num" id="statTotal">—</div><div class="label">Total</div></div>
-  <div class="stat-card stat-pendente"><div class="num" id="statPendentes">—</div><div class="label">Pendentes</div></div>
-  <div class="stat-card stat-coletada"><div class="num" id="statColetadas">—</div><div class="label">Em rota</div></div>
-  <div class="stat-card stat-finalizada"><div class="num" id="statFinalizadas">—</div><div class="label">Finalizadas</div></div>
+<main id="conteudo-principal"><div class="stats-grid" role="region" aria-label="Estatísticas de entregas">
+  <div class="stat-card stat-total"><div class="num" id="statTotal" aria-live="polite">—</div><div class="label">Total</div></div>
+  <div class="stat-card stat-pendente"><div class="num" id="statPendentes" aria-live="polite">—</div><div class="label">Pendentes</div></div>
+  <div class="stat-card stat-coletada"><div class="num" id="statColetadas" aria-live="polite">—</div><div class="label">Em rota</div></div>
+  <div class="stat-card stat-finalizada"><div class="num" id="statFinalizadas" aria-live="polite">—</div><div class="label">Finalizadas</div></div>
 </div>
 
 <!-- Criar entrega -->
 <div class="container">
   <h3>Nova Entrega</h3>
   <div class="form-row" style="margin-bottom:8px;">
-    <input type="text" id="cliente" placeholder="Nome do cliente" style="flex:2; min-width:150px;">
+    <label for="cliente" class="sr-only">Nome do cliente</label><input type="text" id="cliente" placeholder="Nome do cliente" style="flex:2; min-width:150px;" aria-label="Nome do cliente" aria-required="true">
     <div style="display:flex; gap:6px; flex:1; min-width:150px;">
-      <input type="text" id="cep" placeholder="CEP (ex: 15000-000)" maxlength="9" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:5px;" oninput="formatarCep(this)" onblur="buscarCep()">
+      <label for="cep" class="sr-only">CEP</label><input type="text" id="cep" placeholder="CEP (ex: 15000-000)" aria-label="CEP do endereço" maxlength="9" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:5px;" oninput="formatarCep(this)" onblur="buscarCep()">
       <span id="cepStatus" style="font-size:18px; line-height:36px;"></span>
     </div>
   </div>
   <div class="form-row" style="margin-bottom:8px;">
-    <input type="text" id="logradouro" placeholder="Rua / Av." style="flex:3; min-width:150px;">
+    <label for="logradouro" class="sr-only">Logradouro</label><input type="text" id="logradouro" placeholder="Rua / Av." aria-label="Rua ou Avenida" style="flex:3; min-width:150px;">
     <input type="text" id="numero" placeholder="Nº" style="flex:0.5; min-width:60px;">
     <input type="text" id="complemento" placeholder="Complemento" style="flex:1; min-width:80px;">
   </div>
@@ -133,7 +134,7 @@
 <div class="container">
   <h3>Entregas</h3>
   <div style="display:flex; gap:8px; align-items:center; margin-bottom:12px; flex-wrap:wrap;">
-    <select id="filtro" onchange="pagina=1; carregarEntregas()">
+    <label for="filtro" class="sr-only">Filtrar por status</label><select id="filtro" onchange="pagina=1; carregarEntregas()" aria-label="Filtrar entregas por status">
       <option value="todas">Todas</option>
       <option value="pendente">Pendentes</option>
       <option value="coletada">Em rota</option>
@@ -141,11 +142,11 @@
     </select>
     <span id="totalInfo" style="font-size:13px; color:#666;"></span>
   </div>
-  <div id="lista">Carregando...</div>
+  <div id="lista" aria-live="polite" aria-label="Lista de entregas">Carregando...</div>
   <div class="paginacao">
-    <button id="btnAnterior" onclick="pagina--; carregarEntregas()" disabled>← Anterior</button>
+    <button id="btnAnterior" onclick="pagina--; carregarEntregas()" disabled aria-label="Página anterior">← Anterior</button>
     <span id="paginaInfo"></span>
-    <button id="btnProxima" onclick="pagina++; carregarEntregas()" disabled>Próxima →</button>
+    <button id="btnProxima" onclick="pagina++; carregarEntregas()" disabled aria-label="Próxima página">Próxima →</button>
   </div>
 </div>
 
@@ -153,12 +154,13 @@
 <div class="container">
   <h3>Motoristas</h3>
   <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:15px;">
-    <input type="text" id="motoristaNome" placeholder="Nome" style="padding:8px; border:1px solid #ccc; border-radius:5px; flex:1; min-width:100px;">
-    <input type="password" id="motoristaSenha" placeholder="Senha" style="padding:8px; border:1px solid #ccc; border-radius:5px; flex:1; min-width:100px;">
-    <button class="btn-cadastrar" onclick="cadastrarMotorista()">Cadastrar</button>
+    <label for="motoristaNome" class="sr-only">Nome do motorista</label><input type="text" id="motoristaNome" placeholder="Nome" aria-label="Nome do motorista" style="padding:8px; border:1px solid #ccc; border-radius:5px; flex:1; min-width:100px;">
+    <label for="motoristaSenha" class="sr-only">Senha do motorista</label><input type="password" id="motoristaSenha" placeholder="Senha" aria-label="Senha do motorista" style="padding:8px; border:1px solid #ccc; border-radius:5px; flex:1; min-width:100px;">
+    <button class="btn-cadastrar" onclick="cadastrarMotorista()" aria-label="Cadastrar novo motorista">Cadastrar</button>
   </div>
-  <div id="listaMotoristas">Carregando...</div>
+  <div id="listaMotoristas" aria-live="polite" aria-label="Lista de motoristas cadastrados">Carregando...</div>
 </div>
+</main>
 
 <script>
   // Verifica auth
