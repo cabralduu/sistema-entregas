@@ -6,6 +6,8 @@
 const request = require("supertest");
 const app = require("./server");
 
+// Aguarda o banco em memória inicializar antes de rodar os testes
+beforeAll(() => new Promise(resolve => setTimeout(resolve, 500)));
 // ──────────────────────────────────────────
 // ENTREGAS
 // ──────────────────────────────────────────
